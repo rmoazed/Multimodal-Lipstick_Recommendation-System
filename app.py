@@ -430,9 +430,17 @@ def load_database():
 @st.cache_resource
 def load_openai_client():
 
-    api_key = os.getenv(
-        "OPENAI_API_KEY"
-    )
+    api_key = None
+
+    # Streamlit Cloud
+    try:
+        api_key = st.secrets["OPENAI_API_KEY"]
+    except Exception:
+        pass
+
+    # Local .env / environment variable fallback
+    if not api_key:
+        api_key = os.getenv("OPENAI_API_KEY")
 
     if not api_key:
         return None
