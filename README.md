@@ -4,6 +4,9 @@ A multimodal recommendation system that matches lipsticks from a persistent pers
 
 The system combines **computer vision, color-space feature engineering, multimodal weak supervision, pairwise preference modeling, utility learning, diversity-aware recommendation, persistent storage, and an LLM explanation layer**.
 
+![App preview](images/lipstick_app_3.png)
+
+
 ---
 
 ## Overview
@@ -472,7 +475,7 @@ This architecture provides a foundation for future personalization based on actu
 
 The Streamlit application contains three primary views.
 
-### 💄 Find a Match
+### Find a Match
 
 Upload an outfit photograph and generate five lipstick recommendations.
 
