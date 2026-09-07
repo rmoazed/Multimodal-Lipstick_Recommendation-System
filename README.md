@@ -52,7 +52,9 @@ The Streamlit application allows a user to:
 - Browse their lipstick collection
 - Review recommendation history
 
-**Live demo:** *Coming soon*
+**Live demo:** 
+
+[Live Demo](https://multimodal-lipstickrecommendation-system-vmnnitsgpwpn9jwem3inu.streamlit.app/)
 
 ### App Preview
 
