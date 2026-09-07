@@ -529,7 +529,7 @@ Review previous recommendation sessions and see:
     │   ├── v8_ridge_model.joblib
     │   └── v8_feature_spec.csv
     │
-    ├── lipstick_images/
+    ├── lipsticks/
     │   └── ranking_swatches/
     │
     ├── data/
