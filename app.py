@@ -10,7 +10,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 from src.database import LipstickDatabase
-from src.ranking_pipeline import LipstickRecommender
+from src.ranking_pipeline_v2 import LipstickRecommenderV2
 
 
 # ============================================================
@@ -395,7 +395,7 @@ DATABASE_PATH = (
 
 SWATCH_DIR = (
     PROJECT_ROOT
-    / "lipsticks"
+    / "lipstick_images"
     / "ranking_swatches"
 )
 
@@ -407,7 +407,7 @@ SWATCH_DIR = (
 @st.cache_resource
 def load_recommender():
 
-    return LipstickRecommender(
+    return LipstickRecommenderV2(
         catalog_path=CATALOG_PATH,
         artifact_dir=ARTIFACT_DIR,
     )
@@ -1121,6 +1121,11 @@ if page == "Find a Match":
                 None,
             )
 
+            st.session_state.pop(
+                "recommendation_color_family",
+                None,
+            )
+
     # --------------------------------------------------------
     # RESTORE PERSISTENT IMAGE
     # --------------------------------------------------------
@@ -1194,6 +1199,44 @@ if page == "Find a Match":
                     "set of high-ranking options."
                 )
 
+                color_family_choice = st.selectbox(
+                    "What kind of shade are you in the mood for?",
+                    options=[
+                        "Any shade",
+                        "Red",
+                        "Pink",
+                        "Nude",
+                    ],
+                    key="color_family_choice",
+                    help=(
+                        "Choose a color family to rank only shades "
+                        "from that part of your collection."
+                    ),
+                )
+
+                selected_color_family = (
+                    None
+                    if color_family_choice == "Any shade"
+                    else color_family_choice.lower()
+                )
+
+                previous_color_family = st.session_state.get(
+                    "recommendation_color_family"
+                )
+
+                if (
+                    "recommendations" in st.session_state
+                    and previous_color_family != selected_color_family
+                ):
+                    st.session_state.pop(
+                        "recommendations",
+                        None,
+                    )
+                    st.session_state.pop(
+                        "session_id",
+                        None,
+                    )
+
             recommend_button = (
                 st.button(
                     "Find My Lipsticks",
@@ -1226,6 +1269,11 @@ if page == "Find a Match":
                     None,
                 )
 
+                st.session_state.pop(
+                    "recommendation_color_family",
+                    None,
+                )
+
                 st.rerun()
 
         # ----------------------------------------------------
@@ -1242,6 +1290,9 @@ if page == "Find a Match":
                     recommender.recommend(
                         outfit_image,
                         top_k=5,
+                        color_family=(
+                            selected_color_family
+                        ),
                     )
                 )
 
@@ -1350,6 +1401,10 @@ if page == "Find a Match":
                 st.session_state[
                     "session_id"
                 ] = session_id
+
+                st.session_state[
+                    "recommendation_color_family"
+                ] = selected_color_family
 
             st.success(
                 "Your matches are ready ✨"

@@ -15,7 +15,7 @@ from src.outfit_processing import (
 )
 
 
-class LipstickRecommender:
+class LipstickRecommenderV2:
     def __init__(
         self,
         catalog_path,
@@ -651,6 +651,7 @@ class LipstickRecommender:
         top_k=5,
         delta_e_threshold=12.0,
         search_depth=30,
+        color_family=None,
     ):
         processed = (
             self.outfit_processor
@@ -677,9 +678,43 @@ class LipstickRecommender:
             )
         )
 
+        candidate_rankings = full_rankings
+
+        if color_family is not None:
+
+            requested_family = (
+                str(color_family)
+                .strip()
+                .lower()
+            )
+
+            available_families = {
+                str(value).strip().lower()
+                for value in self.catalog["color_family"]
+                .dropna()
+                .unique()
+            }
+
+            if requested_family not in available_families:
+                raise ValueError(
+                    f"Unknown color family: {color_family}. "
+                    f"Available families: {sorted(available_families)}"
+                )
+
+            candidate_rankings = (
+                full_rankings[
+                    full_rankings["color_family"]
+                    .astype(str)
+                    .str.strip()
+                    .str.lower()
+                    == requested_family
+                ]
+                .copy()
+            )
+
         recommendations = (
             self._select_diverse(
-                full_rankings,
+                candidate_rankings,
                 top_k=top_k,
                 delta_e_threshold=(
                     delta_e_threshold
