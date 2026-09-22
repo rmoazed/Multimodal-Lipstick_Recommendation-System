@@ -10,7 +10,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 from src.database import LipstickDatabase
-from src.ranking_pipeline_v2 import LipstickRecommenderV2
+from src.ranking_pipeline import LipstickRecommender
 
 
 # ============================================================
