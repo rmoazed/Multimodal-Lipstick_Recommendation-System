@@ -407,7 +407,7 @@ SWATCH_DIR = (
 @st.cache_resource
 def load_recommender():
 
-    return LipstickRecommenderV2(
+    return LipstickRecommender(
         catalog_path=CATALOG_PATH,
         artifact_dir=ARTIFACT_DIR,
     )
