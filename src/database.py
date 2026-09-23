@@ -109,6 +109,147 @@ class LipstickDatabase:
                 ON recommendations(lipstick_id);
                 """
             )
+            
+            self._migrate_lipsticks_for_enrichment(conn)
+
+    def _migrate_lipsticks_for_enrichment(
+    self,
+    conn: sqlite3.Connection,
+) -> None:
+
+    columns = {
+        row["name"]: row
+        for row in conn.execute(
+            "PRAGMA table_info(lipsticks);"
+        ).fetchall()
+    }
+
+    color_columns = [
+        "L",
+        "a",
+        "b",
+        "chroma",
+    ]
+
+    needs_migration = (
+        "source" not in columns
+        or "enrichment_status" not in columns
+        or any(
+            columns[column]["notnull"] == 1
+            for column in color_columns
+        )
+    )
+
+    if not needs_migration:
+        return
+
+    source_expression = (
+        "source"
+        if "source" in columns
+        else "'catalog'"
+    )
+
+    status_expression = (
+        "enrichment_status"
+        if "enrichment_status" in columns
+        else "'ready'"
+    )
+
+    conn.executescript(
+        f"""
+        PRAGMA foreign_keys = OFF;
+
+        BEGIN TRANSACTION;
+
+        DROP TABLE IF EXISTS lipsticks_new;
+
+        CREATE TABLE lipsticks_new (
+            lipstick_id TEXT PRIMARY KEY,
+            brand TEXT,
+            product_name TEXT,
+            shade_name TEXT,
+            finish TEXT,
+            color_family TEXT,
+            L REAL,
+            a REAL,
+            b REAL,
+            chroma REAL,
+            image_path TEXT,
+            source TEXT NOT NULL
+                DEFAULT 'catalog',
+            enrichment_status TEXT NOT NULL
+                DEFAULT 'ready'
+                CHECK (
+                    enrichment_status IN (
+                        'pending',
+                        'searching',
+                        'validating',
+                        'ready',
+                        'needs_review'
+                    )
+                ),
+            created_at TEXT NOT NULL
+                DEFAULT CURRENT_TIMESTAMP,
+            active INTEGER NOT NULL
+                DEFAULT 1
+                CHECK (active IN (0, 1))
+        );
+
+        INSERT INTO lipsticks_new (
+            lipstick_id,
+            brand,
+            product_name,
+            shade_name,
+            finish,
+            color_family,
+            L,
+            a,
+            b,
+            chroma,
+            image_path,
+            source,
+            enrichment_status,
+            created_at,
+            active
+        )
+        SELECT
+            lipstick_id,
+            brand,
+            product_name,
+            shade_name,
+            finish,
+            color_family,
+            L,
+            a,
+            b,
+            chroma,
+            image_path,
+            {source_expression},
+            {status_expression},
+            created_at,
+            active
+        FROM lipsticks;
+
+        DROP TABLE lipsticks;
+
+        ALTER TABLE lipsticks_new
+        RENAME TO lipsticks;
+
+        COMMIT;
+
+        PRAGMA foreign_keys = ON;
+        """
+    )
+
+    foreign_key_errors = conn.execute(
+        "PRAGMA foreign_key_check;"
+    ).fetchall()
+
+    if foreign_key_errors:
+        raise RuntimeError(
+            "Database migration created "
+            "foreign-key errors."
+        )
 
     # ========================================================
     # LIPSTICK COLLECTION
