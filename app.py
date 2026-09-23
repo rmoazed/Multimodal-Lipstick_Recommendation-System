@@ -1633,13 +1633,79 @@ elif page == "My Collection":
     st.markdown(
         (
             '<div class="hero-subtitle">'
-            "This collection is the source of truth for the "
-            "recommender. Every match is selected from the "
-            "lipsticks stored here."
+            "Your persistent lipstick library. "
+            "Add new shades here and keep track of "
+            "their recommendation readiness."
             "</div>"
         ),
         unsafe_allow_html=True,
+
     )
+
+    with st.expander(
+        "Add a Lipstick",
+        expanded=False,
+    ):
+
+        with st.form(
+            "add_lipstick_form",
+            clear_on_submit=True,
+        ):
+
+            brand = st.text_input(
+                "Brand *",
+                placeholder="e.g. MAC",
+            )
+
+            shade_name = st.text_input(
+                "Shade *",
+                placeholder="e.g. Ruby Woo",
+            )
+
+            product_name = st.text_input(
+                "Product",
+                placeholder="e.g. Retro Matte Lipstick",
+            )
+
+            finish = st.text_input(
+                "Finish",
+                placeholder="e.g. Matte",
+            )
+
+            add_lipstick_submitted = (
+                st.form_submit_button(
+                    "Add to Collection"
+                )
+            )
+
+        if add_lipstick_submitted:
+
+            try:
+
+                new_lipstick_id = (
+                    db.add_user_lipstick(
+                        brand=brand,
+                        shade_name=shade_name,
+                        product_name=product_name,
+                        finish=finish,
+                    )
+                )
+
+                st.success(
+                    f"Added {brand.strip()} "
+                    f"{shade_name.strip()} "
+                    f"to your collection "
+                    f"as {new_lipstick_id}."
+                )
+
+                st.rerun()
+
+            except ValueError as exc:
+
+                st.error(
+                    str(exc)
+                )
+    
 
     lipsticks = (
         db.list_lipsticks(
@@ -1682,6 +1748,7 @@ elif page == "My Collection":
                     "shade_name",
                     "finish",
                     "color_family",
+                    "enrichment_status",
                     "lipstick_id",
                 ]
             ]
@@ -1694,6 +1761,7 @@ elif page == "My Collection":
             "Shade",
             "Finish",
             "Color Family",
+            "Status",
             "Catalog ID",
         ]
 
