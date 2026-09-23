@@ -34,17 +34,26 @@ class LipstickDatabase:
                     shade_name TEXT,
                     finish TEXT,
                     color_family TEXT,
-
-                    L REAL NOT NULL,
-                    a REAL NOT NULL,
-                    b REAL NOT NULL,
-                    chroma REAL NOT NULL,
-
+                    L REAL,
+                    a REAL,
+                    b REAL,
+                    chroma REAL,
                     image_path TEXT,
-
+                    source TEXT NOT NULL
+                        DEFAULT 'catalog',
+                    enrichment_status TEXT NOT NULL
+                        DEFAULT 'ready'
+                        CHECK (
+                            enrichment_status IN (
+                                'pending',
+                                'searching',
+                                'validating',
+                                'ready',
+                                'needs_review'
+                            )
+                        ),
                     created_at TEXT NOT NULL
                         DEFAULT CURRENT_TIMESTAMP,
-
                     active INTEGER NOT NULL
                         DEFAULT 1
                         CHECK (active IN (0, 1))
