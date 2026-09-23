@@ -395,7 +395,7 @@ DATABASE_PATH = (
 
 SWATCH_DIR = (
     PROJECT_ROOT
-    / "lipstick_images"
+    / "lipsticks"
     / "ranking_swatches"
 )
 

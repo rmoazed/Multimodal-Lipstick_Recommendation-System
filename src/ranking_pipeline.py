@@ -15,7 +15,7 @@ from src.outfit_processing import (
 )
 
 
-class LipstickRecommenderV2:
+class LipstickRecommender:
     def __init__(
         self,
         catalog_path,

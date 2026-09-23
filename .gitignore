@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# Python virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local database backups
+*_backup.db
