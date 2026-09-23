@@ -303,6 +303,88 @@ class LipstickDatabase:
                 ),
             )
 
+    def add_user_lipstick(
+        self,
+        brand: str,
+        shade_name: str,
+        product_name: Optional[str] = None,
+        finish: Optional[str] = None,
+    ) -> str:
+
+        brand = brand.strip()
+        shade_name = shade_name.strip()
+
+        if not brand:
+            raise ValueError("Brand is required.")
+
+        if not shade_name:
+            raise ValueError("Shade name is required.")
+
+        product_name = (
+            product_name.strip()
+            if product_name and product_name.strip()
+            else None
+        )
+
+        finish = (
+            finish.strip()
+            if finish and finish.strip()
+            else None
+        )
+
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT lipstick_id
+                FROM lipsticks
+                """
+            ).fetchall()
+
+            existing_numbers = []
+
+            for row in rows:
+                lipstick_id = row["lipstick_id"]
+
+                if (
+                    lipstick_id.startswith("L")
+                    and lipstick_id[1:].isdigit()
+                ):
+                    existing_numbers.append(
+                        int(lipstick_id[1:])
+                    )
+
+            next_number = (
+                max(existing_numbers, default=0) + 1
+            )
+
+            lipstick_id = f"L{next_number:04d}"
+
+            conn.execute(
+                """
+                INSERT INTO lipsticks (
+                    lipstick_id,
+                    brand,
+                    product_name,
+                    shade_name,
+                    finish,
+                    source,
+                    enrichment_status
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    lipstick_id,
+                    brand,
+                    product_name,
+                    shade_name,
+                    finish,
+                    "user_added",
+                    "pending",
+                ),
+            )
+
+        return lipstick_id
+
     def update_lipstick(
         self,
         lipstick_id: str,
