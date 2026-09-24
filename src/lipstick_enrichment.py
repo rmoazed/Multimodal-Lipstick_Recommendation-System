@@ -82,7 +82,11 @@ def search_images(
 
 
 
-def evaluate_identity_evidence(lipstick, candidate):
+def evaluate_identity_evidence(
+    lipstick,
+    candidate,
+    variant_ids=None,
+):
     """
     Evaluate deterministic evidence that a search-result image belongs
     to the target lipstick shade.
@@ -94,7 +98,7 @@ def evaluate_identity_evidence(lipstick, candidate):
             evidence:
                 list of human-readable evidence strings
     """
-
+    
     brand = str(lipstick.get("brand") or "").strip().lower()
     product_name = str(
         lipstick.get("product_name") or ""
@@ -109,6 +113,7 @@ def evaluate_identity_evidence(lipstick, candidate):
     image_url = str(candidate.get("original") or "").strip().lower()
 
     evidence = []
+
 
     # ---------------------------------------------------------
     # 1. Extract target shade number
@@ -125,6 +130,21 @@ def evaluate_identity_evidence(lipstick, candidate):
     # ---------------------------------------------------------
 
     url_text = f"{page_url} {image_url}"
+
+    variant_ids = variant_ids or []
+
+    for variant_id in variant_ids:
+        variant_id = str(variant_id).strip().lower()
+
+        if variant_id and variant_id in url_text:
+            evidence.append(
+                f"URL contains verified variant identifier "
+                f"{variant_id}."
+            )
+            return {
+                "identity_status": "verified",
+                "evidence": evidence,
+            }
 
     url_shade_matches = re.findall(
         r"shade[\s_\-]*([0-9]+)",
