@@ -16,3 +16,9 @@ __pycache__/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Jupyter temporary files
+.virtual_documents/
+
+# Temporary lipstick enrichment images
+data/enrichment_candidates/
