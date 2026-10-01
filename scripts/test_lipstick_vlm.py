@@ -16,51 +16,19 @@ from src.lipstick_enrichment import (
     evaluate_identity_evidence,
 )
 
+from src.lipstick_enrichment import (
+    build_search_query,
+    search_images,
+    evaluate_identity_evidence,
+    download_candidate,
+)
+
 QWEN_MODEL_NAME = "mlx-community/Qwen2.5-VL-7B-Instruct-4bit"
 LIPSTICK_ID = "L0139"
 
 DB_PATH = "data/lipstick_recommender.db"
 CANDIDATE_DIR = Path("data/enrichment_candidates")
 
-
-def download_candidate(candidate):
-    """Download one SearchAPI candidate and return its local path."""
-
-    CANDIDATE_DIR.mkdir(parents=True, exist_ok=True)
-
-    candidate_id = candidate["candidate_id"]
-
-    # Prefer the original image, but fall back to the thumbnail.
-    urls_to_try = [
-        candidate.get("original"),
-        candidate.get("thumbnail"),
-    ]
-
-    for url in urls_to_try:
-        if not url:
-            continue
-
-        try:
-            response = requests.get(
-                url,
-                timeout=20,
-                headers={"User-Agent": "Mozilla/5.0"},
-            )
-            response.raise_for_status()
-
-            image = Image.open(BytesIO(response.content)).convert("RGB")
-
-            image_path = (
-                CANDIDATE_DIR / f"candidate_{candidate_id}.jpg"
-            )
-            image.save(image_path, quality=95)
-
-            return str(image_path)
-
-        except Exception as exc:
-            print(f"Download attempt failed: {exc}")
-
-    return None
 
 
 def main():

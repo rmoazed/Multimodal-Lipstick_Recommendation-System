@@ -1,6 +1,17 @@
 import requests
 import re
 from urllib.parse import urlparse
+from io import BytesIO
+from pathlib import Path
+
+import requests
+from PIL import Image
+
+import numpy as np
+
+from PIL import Image
+from sklearn.cluster import KMeans
+from skimage.color import rgb2lab
 
 
 def build_search_query(lipstick):
@@ -79,7 +90,52 @@ def search_images(
         )
 
     return candidates
+    
+def download_candidate(
+    candidate,
+    candidate_dir="data/enrichment_candidates",
+):
+    """Download one SearchAPI candidate and return its local path."""
 
+    candidate_dir = Path(candidate_dir)
+    candidate_dir.mkdir(parents=True, exist_ok=True)
+
+    candidate_id = candidate["candidate_id"]
+
+    # Prefer the original image, but fall back to the thumbnail.
+    urls_to_try = [
+        candidate.get("original"),
+        candidate.get("thumbnail"),
+    ]
+
+    for url in urls_to_try:
+        if not url:
+            continue
+
+        try:
+            response = requests.get(
+                url,
+                timeout=20,
+                headers={"User-Agent": "Mozilla/5.0"},
+            )
+            response.raise_for_status()
+
+            image = Image.open(
+                BytesIO(response.content)
+            ).convert("RGB")
+
+            image_path = (
+                candidate_dir / f"candidate_{candidate_id}.jpg"
+            )
+
+            image.save(image_path, quality=95)
+
+            return str(image_path)
+
+        except Exception as exc:
+            print(f"Download attempt failed: {exc}")
+
+    return None
 
 
 def evaluate_identity_evidence(
@@ -230,4 +286,140 @@ def evaluate_identity_evidence(
     return {
         "identity_status": "unresolved",
         "evidence": evidence,
+    }
+
+def rgb_to_lab(rgb):
+    """Convert one sRGB color from 0-255 RGB to CIELAB."""
+    rgb = np.asarray(rgb, dtype=float) / 255.0
+    lab = rgb2lab(rgb.reshape(1, 1, 3))
+    return lab[0, 0]
+
+
+def extract_color_from_roi(
+    image,
+    roi,
+    n_clusters=3,
+    random_state=42,
+):
+    """
+    Extract color-cluster information from an image ROI.
+
+    Parameters
+    ----------
+    image : PIL.Image.Image
+        Source RGB image.
+
+    roi : tuple
+        (left, top, right, bottom) crop coordinates.
+
+    n_clusters : int
+        Number of K-means color clusters.
+
+    random_state : int
+        Random seed for reproducibility.
+
+    Returns
+    -------
+    dict
+        ROI, pixel statistics, cluster centers in RGB and LAB,
+        cluster proportions, brightness, labels, and cluster map.
+
+    Notes
+    -----
+    This function intentionally does NOT decide which cluster
+    represents the lipstick. Cluster selection is handled
+    separately because the appropriate rule may depend on
+    visual type and spatial evidence.
+    """
+
+    # Ensure consistent RGB input.
+    image = image.convert("RGB")
+
+    # -----------------------------
+    # Crop ROI
+    # -----------------------------
+
+    roi_image = image.crop(roi)
+    roi_array = np.asarray(roi_image)
+
+    height, width, channels = roi_array.shape
+
+    if channels != 3:
+        raise ValueError(
+            "Expected a 3-channel RGB image."
+        )
+
+    pixels = roi_array.reshape(-1, 3)
+
+    if len(pixels) < n_clusters:
+        raise ValueError(
+            "ROI contains fewer pixels than requested clusters."
+        )
+
+    # -----------------------------
+    # Basic ROI statistics
+    # -----------------------------
+
+    mean_rgb = pixels.mean(axis=0)
+    median_rgb = np.median(pixels, axis=0)
+
+    # -----------------------------
+    # K-means
+    # -----------------------------
+
+    kmeans = KMeans(
+        n_clusters=n_clusters,
+        random_state=random_state,
+        n_init=10,
+    )
+
+    labels = kmeans.fit_predict(pixels)
+    centers_rgb = kmeans.cluster_centers_
+
+    counts = np.bincount(
+        labels,
+        minlength=n_clusters,
+    )
+
+    percentages = (
+        counts / len(pixels) * 100.0
+    )
+
+    # Simple diagnostic brightness measure.
+    brightness = centers_rgb.mean(axis=1)
+
+    # -----------------------------
+    # RGB -> LAB
+    # -----------------------------
+
+    centers_lab = np.array([
+        rgb_to_lab(center)
+        for center in centers_rgb
+    ])
+
+    # Restore labels to ROI geometry.
+    cluster_map = labels.reshape(
+        height,
+        width,
+    )
+
+    return {
+        "roi": roi,
+        "roi_image": roi_image,
+        "roi_size": roi_image.size,
+        "n_pixels": len(pixels),
+
+        "mean_rgb": mean_rgb,
+        "median_rgb": median_rgb,
+        "mean_lab": rgb_to_lab(mean_rgb),
+        "median_lab": rgb_to_lab(median_rgb),
+
+        "cluster_centers_rgb": centers_rgb,
+        "cluster_centers_lab": centers_lab,
+        "cluster_counts": counts,
+        "cluster_percentages": percentages,
+        "cluster_brightness": brightness,
+
+        "cluster_labels": labels,
+        "cluster_map": cluster_map,
     }
