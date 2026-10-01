@@ -24,7 +24,7 @@ from src.lipstick_enrichment import (
 )
 
 QWEN_MODEL_NAME = "mlx-community/Qwen2.5-VL-7B-Instruct-4bit"
-LIPSTICK_ID = "L0139"
+LIPSTICK_ID = "L0080"
 
 DB_PATH = "data/lipstick_recommender.db"
 CANDIDATE_DIR = Path("data/enrichment_candidates")

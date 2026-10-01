@@ -1,0 +1,4 @@
+experiment_id,lipstick_id,brand,shade_name,visual_type,image_source,roi_left,roi_top,roi_right,roi_bottom,selected_cluster_rgb_r,selected_cluster_rgb_g,selected_cluster_rgb_b,selected_cluster_L,selected_cluster_a,selected_cluster_b,selected_cluster_chroma,selected_cluster_percent,selection_reason,reference_L,reference_a,reference_b,delta_e_00
+dior_bullet_01,L0139,Dior,Rouge Premier 8,lipstick_bullet,verified_search_image,240,90,300,170,180.4,42.0,47.4,40.59,54.73,31.6,63.2,68.9,dominant spatial cluster corresponding to lipstick bullet,,,,
+dior_lips_01,L0139,Dior,Rouge Premier 8,worn_lips,verified_search_image,70,250,280,310,164.7,41.6,43.8,37.45,49.83,29.33,57.82,33.4,better-lit central lipstick-covered lip surface,40.59,54.73,31.6,3.1
+valentino_swatch_01,L0080,Valentino,302R - Pink Is Punk,swatch,verified_search_image,50,100,150,175,245.6,87.1,171.4,61.06,67.9,-12.5,69.04,74.7,dominant spatial cluster corresponding to product swatch,58.6,63.61,-11.14,2.45

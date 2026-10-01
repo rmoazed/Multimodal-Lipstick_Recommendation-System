@@ -232,8 +232,64 @@ def evaluate_identity_evidence(
             "evidence": evidence,
         }
 
+        # ---------------------------------------------------------
+    # 3. Look for explicit shade code / shade name evidence
     # ---------------------------------------------------------
-    # 3. Record weaker brand/product evidence
+
+    # Many catalog shade names follow patterns such as:
+    #
+    #   "302R - Pink Is Punk"
+    #
+    # Treat the portion before the first hyphen as a possible
+    # shade code and the portion after it as the shade label.
+
+    shade_parts = [
+        part.strip()
+        for part in shade_name.split("-", maxsplit=1)
+    ]
+
+    target_shade_code = None
+    target_shade_label = None
+
+    if len(shade_parts) == 2:
+        target_shade_code = shade_parts[0]
+        target_shade_label = shade_parts[1]
+
+    candidate_text = " ".join([
+        title,
+        page_url,
+        image_url,
+    ])
+
+    shade_code_match = (
+        target_shade_code
+        and target_shade_code in candidate_text
+    )
+
+    shade_label_match = (
+        target_shade_label
+        and target_shade_label in candidate_text
+    )
+
+    if shade_code_match:
+        evidence.append(
+            f"Candidate explicitly contains target shade code: "
+            f"{target_shade_code}."
+        )
+
+    if shade_label_match:
+        evidence.append(
+            f"Candidate explicitly contains target shade name: "
+            f"{target_shade_label}."
+        )
+
+    if shade_code_match or shade_label_match:
+        return {
+            "identity_status": "verified",
+            "evidence": evidence,
+        }
+    # ---------------------------------------------------------
+    # 4. Record weaker brand/product evidence
     # ---------------------------------------------------------
 
     if brand and brand in source:
@@ -270,7 +326,7 @@ def evaluate_identity_evidence(
         pass
 
     # ---------------------------------------------------------
-    # 4. No exact shade evidence
+    # 5. No exact shade evidence
     # ---------------------------------------------------------
 
     if not evidence:
@@ -397,6 +453,11 @@ def extract_color_from_roi(
         for center in centers_rgb
     ])
 
+    centers_chroma = np.sqrt(
+        centers_lab[:, 1] ** 2
+        + centers_lab[:, 2] ** 2
+    )
+
     # Restore labels to ROI geometry.
     cluster_map = labels.reshape(
         height,
@@ -419,6 +480,7 @@ def extract_color_from_roi(
         "cluster_counts": counts,
         "cluster_percentages": percentages,
         "cluster_brightness": brightness,
+        "cluster_chroma": centers_chroma,
 
         "cluster_labels": labels,
         "cluster_map": cluster_map,

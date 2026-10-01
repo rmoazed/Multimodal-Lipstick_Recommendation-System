@@ -495,3 +495,182 @@ print(
     f"\nCross-image Delta E 00: "
     f"{cross_image_delta_e:.2f}"
 )
+
+# ------------------------------------------------------------
+# VALENTINO 302R SOURCE
+# ------------------------------------------------------------
+
+VALENTINO_SOURCE_PATH = Path(
+    "data/enrichment_candidates/candidate_4.jpg"
+)
+
+valentino_image = Image.open(
+    VALENTINO_SOURCE_PATH
+).convert("RGB")
+
+print("\nValentino image size:", valentino_image.size)
+
+fig, ax = plt.subplots(figsize=(8, 8))
+
+ax.imshow(valentino_image)
+ax.set_title("Valentino 302R - Pink Is Punk")
+
+ax.set_xlabel("x")
+ax.set_ylabel("y")
+
+fig.tight_layout()
+
+valentino_reference_path = (
+    OUTPUT_DIR / "valentino_302r_coordinate_reference.png"
+)
+
+fig.savefig(
+    valentino_reference_path,
+    dpi=150,
+)
+
+plt.close(fig)
+
+print(
+    "Saved Valentino coordinate reference:",
+    valentino_reference_path,
+)
+
+# ------------------------------------------------------------
+# VALENTINO 302R ROI
+# ------------------------------------------------------------
+
+VALENTINO_ROI = (50, 100, 150, 175)
+
+valentino_roi = valentino_image.crop(VALENTINO_ROI)
+
+valentino_roi_path = (
+    OUTPUT_DIR / "valentino_302r_roi.png"
+)
+
+valentino_roi.save(valentino_roi_path)
+
+print("\nValentino ROI:", VALENTINO_ROI)
+print("ROI size:", valentino_roi.size)
+print("Saved ROI:", valentino_roi_path)
+
+# ------------------------------------------------------------
+# VALENTINO 302R COLOR EXTRACTION
+# ------------------------------------------------------------
+
+from src.lipstick_enrichment import extract_color_from_roi
+
+valentino_result = extract_color_from_roi(
+    image=valentino_image,
+    roi=VALENTINO_ROI,
+    n_clusters=3,
+)
+
+print("\nVALENTINO 302R K-MEANS CLUSTERS")
+print("--------------------------------")
+
+for i in range(3):
+    print(f"\nCluster {i}")
+
+    print(
+        "RGB:",
+        np.round(
+            valentino_result["cluster_centers_rgb"][i],
+            1,
+        ),
+    )
+
+    print(
+        "LAB:",
+        np.round(
+            valentino_result["cluster_centers_lab"][i],
+            2,
+        ),
+    )
+
+    print(
+        "Percent:",
+        round(
+            valentino_result["cluster_percentages"][i],
+            1,
+        ),
+    )
+
+
+# ------------------------------------------------------------
+# SPATIAL CLUSTER MAP
+# ------------------------------------------------------------
+
+cluster_map = valentino_result["cluster_map"]
+
+fig, axes = plt.subplots(
+    1,
+    2,
+    figsize=(10, 5),
+)
+
+axes[0].imshow(
+    valentino_result["roi_image"]
+)
+axes[0].set_title("Valentino 302R ROI")
+axes[0].axis("off")
+
+axes[1].imshow(
+    cluster_map,
+    cmap="viridis",
+)
+axes[1].set_title("Valentino 302R Cluster Map")
+axes[1].axis("off")
+
+fig.tight_layout()
+
+valentino_cluster_path = (
+    OUTPUT_DIR /
+    "valentino_302r_cluster_map.png"
+)
+
+fig.savefig(
+    valentino_cluster_path,
+    dpi=150,
+)
+
+plt.close(fig)
+
+print(
+    "\nSaved cluster map:",
+    valentino_cluster_path,
+)
+
+from skimage.color import deltaE_ciede2000
+
+legacy_lab = np.array([
+    58.59653477759355,
+    63.61287297528284,
+    -11.14413895993249,
+])
+
+extracted_lab = valentino_result[
+    "cluster_centers_lab"
+][0]
+
+delta_e = deltaE_ciede2000(
+    extracted_lab.reshape(1, 1, 3),
+    legacy_lab.reshape(1, 1, 3),
+)[0, 0]
+
+print("\nVALENTINO 302R VALIDATION")
+print("-------------------------")
+
+print(
+    "Extracted LAB:",
+    np.round(extracted_lab, 2),
+)
+
+print(
+    "Legacy LAB:   ",
+    np.round(legacy_lab, 2),
+)
+
+print(
+    f"Delta E 00: {delta_e:.2f}"
+)
